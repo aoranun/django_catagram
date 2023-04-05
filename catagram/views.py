@@ -13,6 +13,13 @@ from catagram.utils.image_utils import get_file_hash
 
 from .serializers import PostSerializer
 from .models import Post
+from django.http import JsonResponse
+
+import logging
+
+from django.db import transaction
+
+logger = logging.getLogger(__name__)
 
 # class PostViewSet(viewsets.ModelViewSet):
 #     queryset = Post.objects.all().order_by('p_picname')
@@ -22,10 +29,9 @@ class PostApi(APIView):
     parser_classes = [MultiPartParser]
     @swagger_auto_schema(
         manual_parameters=[
-            openapi.Parameter('p_picname', openapi.IN_FORM, type=openapi.TYPE_STRING, description=''),
+            openapi.Parameter('image', openapi.IN_FORM, type=openapi.TYPE_FILE, description=''),
             openapi.Parameter('caption', openapi.IN_FORM, type=openapi.TYPE_STRING, description=''),
-            openapi.Parameter('p_time', openapi.IN_FORM, type=openapi.TYPE_STRING, description=''),
-            openapi.Parameter('like_count', openapi.IN_FORM, type=openapi.TYPE_STRING, description='')
+            openapi.Parameter('like_count', openapi.IN_FORM, type=openapi.TYPE_INTEGER, description='')
         ],
         operation_description="Post a Cat Pictures",
         responses={
@@ -36,22 +42,27 @@ class PostApi(APIView):
                 description="Invalid input or image upload failed"
             ),
         },
-        tags=["Post Cat"],
     )
     def post(self, request):
         try:
-            Post(
-                p_picname=request.data['p_picname'],
-                caption=request.data['caption'],
-                p_time=request.data['p_time'],
-                like_count=request.data['like_count']
-            ).save()
+            catpic = CatPics.objects.create_catpic(
+                    title=get_file_hash(request.data['image']),
+                    image=request.data['image']
+                )
+            Post.objects.create(
+                    caption=request.data['caption'],
+                    like_count=request.data['like_count'],
+                    catpic=catpic
+                ).save()
             return Response(status=status.HTTP_201_CREATED)
-        except:
+        except Exception as e:
+            logger.error(e)
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request):
-        pass
+        all_post = Post.objects.all()
+        data = {'post': list(all_post.values())}
+        return JsonResponse(data)
 
 class UploadCatPicApi(APIView):
     parser_classes = [MultiPartParser]

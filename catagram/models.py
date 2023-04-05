@@ -71,19 +71,29 @@ class UserProfile(AbstractBaseUser):
     @property
     def is_staff(self):
         return self.is_admin
-
-class Post(models.Model):
-    p_picname = models.CharField(max_length=200)
-    caption = models.CharField(max_length=200)
-    p_time = models.DateTimeField()
-    like_count = models.IntegerField()
-    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, default=None)
-
-class Board(models.Model):
-    pass
-
+    
+class CatPicsManager(models.Manager):
+    def create_catpic(self, title, image):
+        catpic = self.create(title=title, image=image)
+        return catpic
+    
 class CatPics(models.Model):        
     title = models.CharField(max_length=255)
     image = models.ImageField(upload_to=catpic_image_path)
     uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    objects = CatPicsManager()
+
+class Post(models.Model):
+    #p_picname = models.CharField(max_length=200)
+    caption = models.CharField(max_length=200)
+    p_time = models.DateTimeField(auto_now=True)
+    like_count = models.IntegerField()
+    post_at = models.DateTimeField(auto_now_add=True)
+    catpic = models.OneToOneField(CatPics, on_delete=models.CASCADE)
+    #user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, default=None)
+
+class Board(models.Model):
+    pass
+
     
