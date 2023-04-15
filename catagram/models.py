@@ -32,7 +32,7 @@ class UserProfile(AbstractBaseUser):
     email = models.EmailField(max_length=255, unique=True, null=False)
     username = models.CharField(max_length=30, unique=True, null=False)
     display_name = models.CharField(max_length=50, null=False)
-    birth_date = models.DateField(blank=True)
+    birth_date = models.DateField(blank=True, null=True)
     follower_count = models.IntegerField(default=0)
     following_count = models.IntegerField(default=0)
     GENDER_CHOICES = [
@@ -49,6 +49,8 @@ class UserProfile(AbstractBaseUser):
     is_active = models.BooleanField(default=True)
     is_admin = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
+
+    password = models.CharField(max_length=128, null=False)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
@@ -70,8 +72,12 @@ class UserProfile(AbstractBaseUser):
 
     @property
     def is_staff(self):
-        return self.is_admin
+        return self.is_staff
     
+    @is_staff.setter
+    def is_staff(self, value):
+        self._is_staff = value
+        
 class CatPicsManager(models.Manager):
     def create_catpic(self, title, image):
         catpic = self.create(title=title, image=image)

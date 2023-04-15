@@ -3,6 +3,8 @@ from rest_framework import routers
 from . import views
 from .views import UploadCatPicApi
 from .views import PostApi
+from .views import LoginApi
+from .views import UserProfileList
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
@@ -29,6 +31,8 @@ urlpatterns = [
     re_path(r'^swagger/$', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     re_path(r'^redoc/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     path('cat_pics/', UploadCatPicApi.as_view(), name='upload_cat_pic_api'),
-    path('postcat/', PostApi.as_view(), name='post_cat_api')
+    path('postcat/', PostApi.as_view(), name='post_cat_api'),
+    path('signin/', LoginApi.as_view(), name='signin_api'),
+    path('account/',UserProfileList.as_view(),name='account_api')
     #path('api-auth/', include('rest_framework.urls', namespace='rest_framework'))
 ]
