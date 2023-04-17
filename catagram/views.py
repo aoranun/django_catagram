@@ -21,9 +21,19 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import authenticate, login
 
+from django.contrib.auth import get_user_model
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
+import jwt
+
 import logging
 
+from .yolo import yolotest2
+
 from django.db import transaction
+
+User = get_user_model()
 
 logger = logging.getLogger(__name__)
 
@@ -50,12 +60,17 @@ class LoginApi(APIView):
         },
     )
     def post(self, request):
-        username = request.data.get('username')
-        password = request.data.get('password')
+        data = request.data
+        username = data.get('username')
+        password = data.get('password')
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            return Response({'message': 'Login successful'})
+            try:
+                profile = UserProfile.objects.get(user=user)
+            except UserProfile.DoesNotExist:
+                profile = None
+            return Response({'message': 'Login successful', 'profile': profile})
         else:
             return Response({'message': 'Invalid credentials'})
 
@@ -90,7 +105,7 @@ class UserProfileList(APIView):
             email=data['email'],
             username=data['username'],
             display_name=data['display_name'],
-            birth_date = request.data.get('birth_date', None),
+            birth_date = data.get('birth_date', None),
             follower_count=data.get('follower_count', 0),
             following_count=data.get('following_count', 0),
             gender=data.get('gender', 'N'),
@@ -101,6 +116,22 @@ class UserProfileList(APIView):
         )
         user.save()
         return Response({'success': 'User created successfully'}, status=status.HTTP_201_CREATED)
+        # if request.method == 'POST':
+        #     data = json.loads(request.body.decode())
+        #     username = data.get('username')
+        #     password = data.get('password')
+        #     email = data.get('email')
+        #     if username and password and email:
+        #         user = UserProfile.objects.create_user(username=username, email=email, password=password)
+        #         payload = {
+        #         'user_id': user.id
+        #         }
+        #         token = jwt.encode(payload, 'secret', algorithm='HS256')
+        #         return JsonResponse({'token': token.decode()})
+        #     else:
+        #         return JsonResponse({'error': 'Please provide a username, password, and email'}, status=400)
+        # else:
+        #     return JsonResponse({'error': 'Invalid request method'}, status=400)
     
     def get(self, request, user_id=None):
         if user_id is None:
@@ -138,6 +169,7 @@ class PostApi(APIView):
     def post(self, request):
         try:
             # Create a new catpic
+            yolotest2.yolodetect()
             catpic = CatPics.objects.create_catpic(
                     title=get_file_hash(request.data['image']),
                     image=request.data['image']
