@@ -1,6 +1,6 @@
 import os
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from catagram.utils.image_utils import catpic_image_path
 
 class UserManager(BaseUserManager):
@@ -28,7 +28,7 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-class UserProfile(AbstractBaseUser):
+class UserProfile(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(max_length=255, unique=True, null=False)
     username = models.CharField(max_length=30, unique=True, null=False)
     display_name = models.CharField(max_length=50, null=False)
@@ -46,16 +46,15 @@ class UserProfile(AbstractBaseUser):
         default='N',
     )
 
+    date_joined = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
     is_admin = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
 
-    password = models.CharField(max_length=128, null=False)
+    objects = UserManager()
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username']
-
-    objects = UserManager()
+    REQUIRED_FIELDS = []
 
     def __str__(self):
         return self.username

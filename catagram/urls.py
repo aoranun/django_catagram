@@ -1,10 +1,13 @@
 from django.urls import include, path, re_path
 from rest_framework import routers
+
 from . import views
 from .views import UploadCatPicApi
 from .views import PostApi
 from .views import LoginApi
-from .views import UserProfileList
+# from .views import UserProfileList
+from .views import UserCreateAPIView
+
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
@@ -33,6 +36,7 @@ urlpatterns = [
     path('cat_pics/', UploadCatPicApi.as_view(), name='upload_cat_pic_api'),
     path('postcat/', PostApi.as_view(), name='post_cat_api'),
     path('signin/', LoginApi.as_view(), name='signin_api'),
-    path('account/',UserProfileList.as_view(),name='account_api')
+   #  path('account/',UserProfileList.as_view(),name='account_api'),
+    path('user/',UserCreateAPIView.as_view(),name='user_api')
     #path('api-auth/', include('rest_framework.urls', namespace='rest_framework'))
 ]

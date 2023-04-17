@@ -12,8 +12,12 @@ from drf_yasg import openapi
 from catagram.utils.image_utils import get_file_hash
 
 from .serializers import PostSerializer
+from .yolo import yolotest2
+
 from .models import Post
 from .models import UserProfile
+from .models import UserManager
+
 from django.http import JsonResponse
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
@@ -27,26 +31,53 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 import jwt
 
-import logging
+from django.forms.models import model_to_dict
 
-from .yolo import yolotest2
+import logging
 
 from django.db import transaction
 
-User = get_user_model()
+#User = get_user_model()
 
 logger = logging.getLogger(__name__)
+
+UserProfile = get_user_model()
+
+class UserCreateAPIView(APIView):
+    parser_classes = [MultiPartParser]
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter('email', openapi.IN_FORM, type=openapi.TYPE_STRING, description=''),
+            openapi.Parameter('username', openapi.IN_FORM, type=openapi.TYPE_STRING, description=''),
+            openapi.Parameter('password', openapi.IN_FORM, type=openapi.TYPE_STRING, description='')
+        ],
+        operation_description="Create User Account",
+        responses={
+            status.HTTP_201_CREATED: openapi.Response(
+                description="Create User Account successfully"
+            ),
+            status.HTTP_400_BAD_REQUEST: openapi.Response(
+                description="Invalid input"
+            ),
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        email = request.data.get('email')
+        username = request.data.get('username')
+        password = request.data.get('password')
+        user = UserProfile.objects.create_user(email=email, username=username, password=password)
+        user.save()
+        return Response(status=status.HTTP_201_CREATED)
 
 # class PostViewSet(viewsets.ModelViewSet):
 #     queryset = Post.objects.all().order_by('p_picname')
 #     serializer_class = PostSerializer
 
-
 class LoginApi(APIView):
     parser_classes = [MultiPartParser]
     @swagger_auto_schema(
         manual_parameters=[
-            openapi.Parameter('username', openapi.IN_FORM, type=openapi.TYPE_STRING, description=''),
+            openapi.Parameter('email', openapi.IN_FORM, type=openapi.TYPE_STRING, description=''),
             openapi.Parameter('password', openapi.IN_FORM, type=openapi.TYPE_STRING, description='')
         ],
         operation_description="Sign in",
@@ -60,78 +91,62 @@ class LoginApi(APIView):
         },
     )
     def post(self, request):
-        data = request.data
-        username = data.get('username')
-        password = data.get('password')
-        user = authenticate(request, username=username, password=password)
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        user = authenticate(request, email=email, password=password)
         if user is not None:
             login(request, user)
             try:
-                profile = UserProfile.objects.get(user=user)
+                account = UserProfile.objects.get(email=email)
             except UserProfile.DoesNotExist:
-                profile = None
-            return Response({'message': 'Login successful', 'profile': profile})
+                account = None
+            account_dict = model_to_dict(account)
+            return Response({'message': 'Login successful', 'profile': account_dict}, status=status.HTTP_200_OK)
         else:
-            return Response({'message': 'Invalid credentials'})
+            return Response({'error': 'Invalid email or password'}, status=status.HTTP_400_BAD_REQUEST)
 
-class UserProfileList(APIView):
-    parser_classes = [MultiPartParser]
-    @swagger_auto_schema(
-        manual_parameters=[
-            openapi.Parameter('username', openapi.IN_FORM, type=openapi.TYPE_STRING, description=''),
-            openapi.Parameter('password', openapi.IN_FORM, type=openapi.TYPE_STRING, description=''),
-            openapi.Parameter('display_name', openapi.IN_FORM, type=openapi.TYPE_STRING, description=''),
-            openapi.Parameter('email', openapi.IN_FORM, type=openapi.TYPE_STRING, description='')
-        ],
-        operation_description="Create User Account",
-        responses={
-            status.HTTP_201_CREATED: openapi.Response(
-                description="Create User Account successfully"
-            ),
-            status.HTTP_400_BAD_REQUEST: openapi.Response(
-                description="Invalid input"
-            ),
-        },
-    )
-    def post(self, request):
-        data = request.data
+# class UserProfileList(APIView):
+#     parser_classes = [MultiPartParser]
+#     @swagger_auto_schema(
+#         manual_parameters=[
+#             openapi.Parameter('username', openapi.IN_FORM, type=openapi.TYPE_STRING, description=''),
+#             openapi.Parameter('password', openapi.IN_FORM, type=openapi.TYPE_STRING, description=''),
+#             openapi.Parameter('display_name', openapi.IN_FORM, type=openapi.TYPE_STRING, description=''),
+#             openapi.Parameter('email', openapi.IN_FORM, type=openapi.TYPE_STRING, description='')
+#         ],
+#         operation_description="Create User Account",
+#         responses={
+#             status.HTTP_201_CREATED: openapi.Response(
+#                 description="Create User Account successfully"
+#             ),
+#             status.HTTP_400_BAD_REQUEST: openapi.Response(
+#                 description="Invalid input"
+#             ),
+#         },
+#     )
+#     def post(self, request):
+#         data = request.data
 
-        # Check if the email already exists
-        if UserProfile.objects.filter(email=data['email']).exists():
-            return Response({'error': 'Email already exists'}, status=status.HTTP_400_BAD_REQUEST)
+#         # Check if the email already exists
+#         if UserProfile.objects.filter(email=data['email']).exists():
+#             return Response({'error': 'Email already exists'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Create a new user
-        user = UserProfile(
-            email=data['email'],
-            username=data['username'],
-            display_name=data['display_name'],
-            birth_date = data.get('birth_date', None),
-            follower_count=data.get('follower_count', 0),
-            following_count=data.get('following_count', 0),
-            gender=data.get('gender', 'N'),
-            is_active=True,
-            is_admin=False,
-            is_staff=True,
-            password=data['password'],
-        )
-        user.save()
-        return Response({'success': 'User created successfully'}, status=status.HTTP_201_CREATED)
-        # if request.method == 'POST':
-        #     data = json.loads(request.body.decode())
-        #     username = data.get('username')
-        #     password = data.get('password')
-        #     email = data.get('email')
-        #     if username and password and email:
-        #         user = UserProfile.objects.create_user(username=username, email=email, password=password)
-        #         payload = {
-        #         'user_id': user.id
-        #         }
-        #         token = jwt.encode(payload, 'secret', algorithm='HS256')
-        #         return JsonResponse({'token': token.decode()})
-        #     else:
-        #         return JsonResponse({'error': 'Please provide a username, password, and email'}, status=400)
-        # else:
-        #     return JsonResponse({'error': 'Invalid request method'}, status=400)
+#         # Create a new user
+#         user = UserProfile(
+#             email=data['email'],
+#             username=data['username'],
+#             display_name=data['display_name'],
+#             birth_date = data.get('birth_date', None),
+#             follower_count=data.get('follower_count', 0),
+#             following_count=data.get('following_count', 0),
+#             gender=data.get('gender', 'N'),
+#             is_active=True,
+#             is_admin=False,
+#             is_staff=True,
+#             password=data['password'],
+#         )
+#         user.save()
+#         return Response({'success': 'User created successfully'}, status=status.HTTP_201_CREATED)
     
     def get(self, request, user_id=None):
         if user_id is None:
