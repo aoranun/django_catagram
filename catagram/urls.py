@@ -2,15 +2,13 @@ from django.urls import include, path, re_path
 from rest_framework import routers
 
 from . import views
-from .views import UploadCatPicApi
-from .views import PostApi
-from .views import LoginApi
-# from .views import UserProfileList
-from .views import UserCreateAPIView
+from .views import UploadCatPicApi, PostApi, LoginApi, LogoutApi, UserCreateAPIView
 
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
+
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
 router = routers.DefaultRouter()
 # router.register(r'post', views.PostViewSet)
@@ -30,13 +28,15 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path('', include(router.urls)),
-    re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
-    re_path(r'^swagger/$', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
-    re_path(r'^redoc/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+    # YOUR PATTERNS
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    # Optional UI:
+    path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
     path('cat_pics/', UploadCatPicApi.as_view(), name='upload_cat_pic_api'),
     path('postcat/', PostApi.as_view(), name='post_cat_api'),
     path('signin/', LoginApi.as_view(), name='signin_api'),
-   #  path('account/',UserProfileList.as_view(),name='account_api'),
+    path('logout/', LogoutApi.as_view(), name='logout_api'),
     path('user/',UserCreateAPIView.as_view(),name='user_api')
     #path('api-auth/', include('rest_framework.urls', namespace='rest_framework'))
 ]

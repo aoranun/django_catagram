@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 
 from pathlib import Path
 import dj_database_url
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -40,8 +41,18 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'catagram',
     'rest_framework',
-    'drf_yasg',
+    'rest_framework_simplejwt',
+    'drf_spectacular',
+    'drf_spectacular_sidecar',
+    'rest_framework_simplejwt.token_blacklist'
 ]
+
+SPECTACULAR_SETTINGS = {
+    'SWAGGER_UI_DIST': 'SIDECAR',  # shorthand to use the sidecar instead
+    'SWAGGER_UI_FAVICON_HREF': 'SIDECAR',
+    'REDOC_DIST': 'SIDECAR',
+    # OTHER SETTINGS
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -73,7 +84,14 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'django_catagramV2.wsgi.application'
 
-REST_FRAMEWORK = {'DEFAULT_SCHEMA_CLASS':'rest_framework.schemas.coreapi.AutoSchema' }
+REST_FRAMEWORK = {
+        'DEFAULT_AUTHENTICATION_CLASSES': ['rest_framework_simplejwt.authentication.JWTAuthentication'],
+        'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema' 
+    }
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=40),
+}
 
 
 # Database

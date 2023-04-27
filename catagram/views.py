@@ -1,21 +1,24 @@
 from django.shortcuts import render
 
-from rest_framework import viewsets
-from rest_framework import status
+from rest_framework import viewsets, status
+from rest_framework.generics import GenericAPIView
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import CatPics
-from .serializers import CatPicsSerializer
+from .serializers import *
 from rest_framework.parsers import MultiPartParser
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from catagram.utils.image_utils import get_file_hash
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.tokens import OutstandingToken
+from rest_framework import permissions
 
 from .serializers import PostSerializer
 from .yolo import yolotest2
 
-from .models import Post
-from .models import UserProfile
+from .models import Post, UserProfile
 from .models import UserManager
 
 from django.http import JsonResponse
@@ -23,43 +26,34 @@ from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 from rest_framework import status
-from django.contrib.auth import authenticate, login
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from django.contrib.auth import authenticate, login, logout, get_user_model
+from rest_framework_simplejwt.views import TokenViewBase
 
-from django.contrib.auth import get_user_model
-from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 import jwt
 
 from django.forms.models import model_to_dict
+#from .jwt_fuc import create_jwt, verify_jwt
 
 import logging
 
 from django.db import transaction
-
-#User = get_user_model()
 
 logger = logging.getLogger(__name__)
 
 UserProfile = get_user_model()
 
 class UserCreateAPIView(APIView):
-    parser_classes = [MultiPartParser]
-    @swagger_auto_schema(
-        manual_parameters=[
-            openapi.Parameter('email', openapi.IN_FORM, type=openapi.TYPE_STRING, description=''),
-            openapi.Parameter('username', openapi.IN_FORM, type=openapi.TYPE_STRING, description=''),
-            openapi.Parameter('password', openapi.IN_FORM, type=openapi.TYPE_STRING, description='')
-        ],
-        operation_description="Create User Account",
-        responses={
-            status.HTTP_201_CREATED: openapi.Response(
-                description="Create User Account successfully"
-            ),
-            status.HTTP_400_BAD_REQUEST: openapi.Response(
-                description="Invalid input"
-            ),
-        },
+    serializer_class = UserCreateSerializer
+    @extend_schema(
+        request=UserCreateSerializer,
+        responses={   
+            status.HTTP_201_CREATED: openapi.Response(description="User created"),
+            status.HTTP_400_BAD_REQUEST: openapi.Response(description="Invalid email or password"),
+        }
     )
     def post(self, request, *args, **kwargs):
         email = request.data.get('email')
@@ -67,122 +61,76 @@ class UserCreateAPIView(APIView):
         password = request.data.get('password')
         user = UserProfile.objects.create_user(email=email, username=username, password=password)
         user.save()
-        return Response(status=status.HTTP_201_CREATED)
+        return Response({'success': 'user created'},status=status.HTTP_201_CREATED)
 
-# class PostViewSet(viewsets.ModelViewSet):
-#     queryset = Post.objects.all().order_by('p_picname')
-#     serializer_class = PostSerializer
-
-class LoginApi(APIView):
-    parser_classes = [MultiPartParser]
-    @swagger_auto_schema(
-        manual_parameters=[
-            openapi.Parameter('email', openapi.IN_FORM, type=openapi.TYPE_STRING, description=''),
-            openapi.Parameter('password', openapi.IN_FORM, type=openapi.TYPE_STRING, description='')
-        ],
-        operation_description="Sign in",
-        responses={
-            status.HTTP_201_CREATED: openapi.Response(
-                description="successful"
-            ),
-            status.HTTP_400_BAD_REQUEST: openapi.Response(
-                description="Invalid input username or password"
-            ),
-        },
-    )
-    def post(self, request):
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-        user = authenticate(request, email=email, password=password)
-        if user is not None:
-            login(request, user)
+    def get(self, request):
+        user_id = request.GET.get('user_id')
+        if user_id is not None:
+            # Get user by id
             try:
-                account = UserProfile.objects.get(email=email)
-            except UserProfile.DoesNotExist:
-                account = None
-            account_dict = model_to_dict(account)
-            return Response({'message': 'Login successful', 'profile': account_dict}, status=status.HTTP_200_OK)
+                # user = UserProfile.objects.get(id=user_id)
+                # data = {'user': user.__dict__}
+                user = UserProfile.objects.filter(id=int(user_id)).values()
+                data = {'user': list(user)[0]}
+            except (UserProfile.DoesNotExist, ValueError):
+                data = {'error': f'User with id={user_id} does not exist'}
         else:
-            return Response({'error': 'Invalid email or password'}, status=status.HTTP_400_BAD_REQUEST)
-
-# class UserProfileList(APIView):
-#     parser_classes = [MultiPartParser]
-#     @swagger_auto_schema(
-#         manual_parameters=[
-#             openapi.Parameter('username', openapi.IN_FORM, type=openapi.TYPE_STRING, description=''),
-#             openapi.Parameter('password', openapi.IN_FORM, type=openapi.TYPE_STRING, description=''),
-#             openapi.Parameter('display_name', openapi.IN_FORM, type=openapi.TYPE_STRING, description=''),
-#             openapi.Parameter('email', openapi.IN_FORM, type=openapi.TYPE_STRING, description='')
-#         ],
-#         operation_description="Create User Account",
-#         responses={
-#             status.HTTP_201_CREATED: openapi.Response(
-#                 description="Create User Account successfully"
-#             ),
-#             status.HTTP_400_BAD_REQUEST: openapi.Response(
-#                 description="Invalid input"
-#             ),
-#         },
-#     )
-#     def post(self, request):
-#         data = request.data
-
-#         # Check if the email already exists
-#         if UserProfile.objects.filter(email=data['email']).exists():
-#             return Response({'error': 'Email already exists'}, status=status.HTTP_400_BAD_REQUEST)
-
-#         # Create a new user
-#         user = UserProfile(
-#             email=data['email'],
-#             username=data['username'],
-#             display_name=data['display_name'],
-#             birth_date = data.get('birth_date', None),
-#             follower_count=data.get('follower_count', 0),
-#             following_count=data.get('following_count', 0),
-#             gender=data.get('gender', 'N'),
-#             is_active=True,
-#             is_admin=False,
-#             is_staff=True,
-#             password=data['password'],
-#         )
-#         user.save()
-#         return Response({'success': 'User created successfully'}, status=status.HTTP_201_CREATED)
-    
-    def get(self, request, user_id=None):
-        if user_id is None:
             # Get all users
             users = UserProfile.objects.all()
             data = {'users': list(users.values())}
-        else:
-            # Get user by id
-            try:
-                user = UserProfile.objects.get(id=user_id)
-                data = {'user': user.__dict__}
-            except UserProfile.DoesNotExist:
-                data = {'error': f'User with id={user_id} does not exist'}
-        
+
         return JsonResponse(data)
+
+class LoginApi(APIView):
+    serializer_class = LoginSerializer
+
+    @extend_schema(
+        request=LoginSerializer,
+        responses={
+            status.HTTP_200_OK: openapi.Response(description="Login successful"),
+            status.HTTP_400_BAD_REQUEST: openapi.Response(description="Invalid email or password"),
+        }
+    )
+    def post(self, request, *args, **kwargs):
+        serializer = TokenObtainPairSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        refresh = RefreshToken.for_user(serializer.user)
+        return Response({
+            'access_token': str(serializer.validated_data['access']),
+            'refresh_token': str(refresh),
+        })
+
+class LogoutApi(TokenViewBase):
+    permission_classes = (permissions.AllowAny,)
+    serializer_class = LogoutSerializer
+    @extend_schema(
+        request=LogoutSerializer,
+        responses={
+            status.HTTP_204_NO_CONTENT: openapi.Response(description="Logout successful"),
+            status.HTTP_400_BAD_REQUEST: openapi.Response(description="Invalid token"),
+        }
+    )
+    def post(self, request, *args, **kwargs):
+        try:
+            token = RefreshToken(request.data.get('refresh'))
+            token.blacklist()
+            return Response(status=204)
+        except Exception as e:
+            return Response(status=400, data={"error": "Invalid token"})
 
 class PostApi(APIView):
     parser_classes = [MultiPartParser]
-    @swagger_auto_schema(
-        manual_parameters=[
-            openapi.Parameter('image', openapi.IN_FORM, type=openapi.TYPE_FILE, description=''),
-            openapi.Parameter('caption', openapi.IN_FORM, type=openapi.TYPE_STRING, description=''),
-            openapi.Parameter('like_count', openapi.IN_FORM, type=openapi.TYPE_INTEGER, description='')
-        ],
-        operation_description="Post a Cat Pictures",
+    serializer_class = PostSerializer
+
+    @extend_schema(
+        request=PostSerializer,
         responses={
-            status.HTTP_201_CREATED: openapi.Response(
-                description="Post successfully"
-            ),
-            status.HTTP_400_BAD_REQUEST: openapi.Response(
-                description="Invalid input or image upload failed"
-            ),
+            status.HTTP_201_CREATED: PostSerializer,
         },
     )
     def post(self, request):
         try:
+            user = request.user
             # Create a new catpic
             yolotest2.yolodetect()
             catpic = CatPics.objects.create_catpic(
@@ -200,30 +148,36 @@ class PostApi(APIView):
             logger.error(e)
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-    def get(self, request):
+    def get(self, request, post_id=None, user_id=None):
         # Get all post
-        all_post = Post.objects.all()
-        data = {'post': list(all_post.values())}
+        if post_id and user_id is None:
+            all_post = Post.objects.all()
+            data = {'post': list(all_post.values())}
+        else:
+            if user_id is None:
+                # Get post by post_id
+                try:
+                    user = UserProfile.objects.get(id=post_id)
+                    data = {'user': user.__dict__}
+                except UserProfile.DoesNotExist:
+                    data = {'error': f'User with id={post_id} does not exist'}
+            elif post_id is None:
+                pass
+            else:
+                pass
+        
         return JsonResponse(data)
 
 # Test for upload catpic
-class UploadCatPicApi(APIView):
+class UploadCatPicApi(GenericAPIView):
+    serializer_class = CatPicsSerializer
     parser_classes = [MultiPartParser]
-    @swagger_auto_schema(
-        manual_parameters=[
-            openapi.Parameter('title', openapi.IN_FORM, type=openapi.TYPE_STRING, description=''),
-            openapi.Parameter('image', openapi.IN_FORM, type=openapi.TYPE_FILE, description='')
-        ],
-        operation_description="Upload a cat picture",
+
+    @extend_schema(
+        request=CatPicsSerializer,
         responses={
-            status.HTTP_201_CREATED: openapi.Response(
-                description="Cat picture uploaded successfully"
-            ),
-            status.HTTP_400_BAD_REQUEST: openapi.Response(
-                description="Invalid input or image upload failed"
-            ),
+            status.HTTP_201_CREATED: CatPicsSerializer,
         },
-        tags=["Cat Pictures"],
     )
     def post(self, request):
         try:

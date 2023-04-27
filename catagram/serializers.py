@@ -2,12 +2,27 @@ from rest_framework import serializers
 from .models import Post
 from .models import CatPics
 
-class CatPicsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CatPics
-        fields = ('title', 'image')
+class CatPicsSerializer(serializers.Serializer):
+    image = serializers.ImageField()
+    title = serializers.CharField(max_length=200)
 
-class PostSerializer(serializers.HyperlinkedModelSerializer):
-    class Meta:
-        model = Post
-        fields = ('p_picname', 'caption', 'p_time','like_count')
+
+class PostSerializer(serializers.Serializer):
+    image = serializers.ImageField()
+    caption = serializers.CharField(max_length=200)
+    like_count = serializers.IntegerField()
+
+
+class LoginSerializer(serializers.Serializer):
+    email = serializers.CharField()
+    password = serializers.CharField()
+
+
+class UserCreateSerializer(serializers.Serializer):
+    email = serializers.CharField()
+    password = serializers.CharField()
+    username = serializers.CharField()
+
+class LogoutSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
+    

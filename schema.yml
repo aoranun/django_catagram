@@ -1,0 +1,380 @@
+openapi: 3.0.3
+info:
+  title: ''
+  version: 0.0.0
+paths:
+  /api/schema/:
+    get:
+      operationId: api_schema_retrieve
+      description: |-
+        OpenApi3 schema for this API. Format can be selected via content negotiation.
+
+        - YAML: application/vnd.oai.openapi
+        - JSON: application/vnd.oai.openapi+json
+      parameters:
+      - in: query
+        name: format
+        schema:
+          type: string
+          enum:
+          - json
+          - yaml
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - af
+          - ar
+          - ar-dz
+          - ast
+          - az
+          - be
+          - bg
+          - bn
+          - br
+          - bs
+          - ca
+          - cs
+          - cy
+          - da
+          - de
+          - dsb
+          - el
+          - en
+          - en-au
+          - en-gb
+          - eo
+          - es
+          - es-ar
+          - es-co
+          - es-mx
+          - es-ni
+          - es-ve
+          - et
+          - eu
+          - fa
+          - fi
+          - fr
+          - fy
+          - ga
+          - gd
+          - gl
+          - he
+          - hi
+          - hr
+          - hsb
+          - hu
+          - hy
+          - ia
+          - id
+          - ig
+          - io
+          - is
+          - it
+          - ja
+          - ka
+          - kab
+          - kk
+          - km
+          - kn
+          - ko
+          - ky
+          - lb
+          - lt
+          - lv
+          - mk
+          - ml
+          - mn
+          - mr
+          - ms
+          - my
+          - nb
+          - ne
+          - nl
+          - nn
+          - os
+          - pa
+          - pl
+          - pt
+          - pt-br
+          - ro
+          - ru
+          - sk
+          - sl
+          - sq
+          - sr
+          - sr-latn
+          - sv
+          - sw
+          - ta
+          - te
+          - tg
+          - th
+          - tk
+          - tr
+          - tt
+          - udm
+          - uk
+          - ur
+          - uz
+          - vi
+          - zh-hans
+          - zh-hant
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/vnd.oai.openapi:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/yaml:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/vnd.oai.openapi+json:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /cat_pics/:
+    post:
+      operationId: cat_pics_create
+      tags:
+      - cat_pics
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CatPics'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatPics'
+          description: ''
+  /logout/:
+    post:
+      operationId: logout_create
+      tags:
+      - logout
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Logout'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Logout'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Logout'
+        required: true
+      security:
+      - {}
+      responses:
+        '204':
+          content:
+            application/json:
+              schema:
+                description: Logout successful
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                description: Invalid token
+          description: ''
+  /postcat/:
+    get:
+      operationId: postcat_retrieve
+      tags:
+      - postcat
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+          description: ''
+    post:
+      operationId: postcat_create
+      tags:
+      - postcat
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Post'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+          description: ''
+  /signin/:
+    post:
+      operationId: signin_create
+      tags:
+      - signin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Login'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Login'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Login'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: Login successful
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                description: Invalid email or password
+          description: ''
+  /user/:
+    get:
+      operationId: user_retrieve
+      tags:
+      - user
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserCreate'
+          description: ''
+    post:
+      operationId: user_create
+      tags:
+      - user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                description: User created
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                description: Invalid email or password
+          description: ''
+components:
+  schemas:
+    CatPics:
+      type: object
+      properties:
+        image:
+          type: string
+          format: uri
+        title:
+          type: string
+          maxLength: 200
+      required:
+      - image
+      - title
+    Login:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required:
+      - email
+      - password
+    Logout:
+      type: object
+      properties:
+        refresh:
+          type: string
+      required:
+      - refresh
+    Post:
+      type: object
+      properties:
+        image:
+          type: string
+          format: uri
+        caption:
+          type: string
+          maxLength: 200
+        like_count:
+          type: integer
+      required:
+      - caption
+      - image
+      - like_count
+    UserCreate:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+        username:
+          type: string
+      required:
+      - email
+      - password
+      - username
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
