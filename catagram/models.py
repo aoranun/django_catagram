@@ -90,13 +90,18 @@ class CatPics(models.Model):
     objects = CatPicsManager()
 
 class Post(models.Model):
-    #p_picname = models.CharField(max_length=200)
     caption = models.CharField(max_length=200)
     p_time = models.DateTimeField(auto_now=True)
     like_count = models.IntegerField()
     post_at = models.DateTimeField(auto_now_add=True)
     catpic = models.OneToOneField(CatPics, on_delete=models.CASCADE)
-    #user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, default=None)
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, default=None)
+
+class CommentPost(models.Model):
+    comment_text = models.CharField(max_length=200)
+    comment_at = models.DateTimeField(auto_now_add=True)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, default=None)
 
 class Board(models.Model):
     pass

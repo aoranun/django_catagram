@@ -12,6 +12,9 @@ class PostSerializer(serializers.Serializer):
     caption = serializers.CharField(max_length=200)
     like_count = serializers.IntegerField()
 
+class CommentSerializer(serializers.Serializer):
+    comment = serializers.CharField(max_length=200)
+
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.CharField()
@@ -25,4 +28,3 @@ class UserCreateSerializer(serializers.Serializer):
 
 class LogoutSerializer(serializers.Serializer):
     refresh = serializers.CharField()
-    

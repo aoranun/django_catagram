@@ -18,8 +18,8 @@ from rest_framework import permissions
 from .serializers import PostSerializer
 from .yolo import yolotest2
 
-from .models import Post, UserProfile
-from .models import UserManager
+from .models import *
+from catagram.utils.image_utils import cat_detec_path
 
 from django.http import JsonResponse
 from rest_framework.authtoken.views import ObtainAuthToken
@@ -118,6 +118,7 @@ class LogoutApi(TokenViewBase):
         except Exception as e:
             return Response(status=400, data={"error": "Invalid token"})
 
+
 class PostApi(APIView):
     parser_classes = [MultiPartParser]
     serializer_class = PostSerializer
@@ -128,11 +129,11 @@ class PostApi(APIView):
             status.HTTP_201_CREATED: PostSerializer,
         },
     )
-    def post(self, request):
+    def post(self, request, *args, **kwargs):
         try:
             user = request.user
             # Create a new catpic
-            yolotest2.yolodetect()
+#            yolotest2.yolodetect(request.data['image'])
             catpic = CatPics.objects.create_catpic(
                     title=get_file_hash(request.data['image']),
                     image=request.data['image']
@@ -141,35 +142,64 @@ class PostApi(APIView):
             Post.objects.create(
                     caption=request.data['caption'],
                     like_count=request.data['like_count'],
-                    catpic=catpic
+                    catpic=catpic,
+                    user_id=user.id
             ).save()
             return Response(status=status.HTTP_201_CREATED)
         except Exception as e:
             logger.error(e)
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-    def get(self, request, post_id=None, user_id=None):
+    def get(self, request, *args, **kwargs):
         # Get all post
-        if post_id and user_id is None:
-            all_post = Post.objects.all()
-            data = {'post': list(all_post.values())}
-        else:
-            if user_id is None:
+        user_id = request.GET.get('user_id')
+        post_id = request.GET.get('post_id')
+        if (post_id is not None) or (user_id is not None):
+            print(post_id,user_id)
+            if (user_id is not None) and (post_id is None):
+                # Get post by user_id
+                try:
+                    post = Post.objects.filter(user_id=user_id)
+                    data = {'post': list(post.values())}
+                except Post.DoesNotExist:
+                    data = {'error': f'Post with id={user_id} does not exist'}
+            elif (post_id is not None) and (user_id is None):
                 # Get post by post_id
                 try:
-                    user = UserProfile.objects.get(id=post_id)
-                    data = {'user': user.__dict__}
-                except UserProfile.DoesNotExist:
-                    data = {'error': f'User with id={post_id} does not exist'}
-            elif post_id is None:
-                pass
+                    post = Post.objects.filter(id=post_id)
+                    data = {'post': list(post.values())}
+                except Post.DoesNotExist:
+                    data = {'error': f'Post with id={post_id} does not exist'}
             else:
-                pass
+                try:
+                    post = Post.objects.filter(id=post_id,user_id=user_id)
+                    data = {'post': list(post.values())}
+                except Post.DoesNotExist:
+                    data = {'error': f'User with id={post_id} does not exist'}
+        else:
+            print(user_id,post_id)
+            all_post = Post.objects.all()
+            data = {'post': list(all_post.values())}
         
         return JsonResponse(data)
 
-# Test for upload catpic
+class CommentApi(APIView):
+    serializer_class = CommentSerializer
+
+    @extend_schema(
+        request=CommentSerializer,
+        responses={
+            status.HTTP_201_CREATED: CommentSerializer,
+        },
+    )
+    def post(self, request):
+        pass
+
+
 class UploadCatPicApi(GenericAPIView):
+    """
+    For the test upload a picture
+    """
     serializer_class = CatPicsSerializer
     parser_classes = [MultiPartParser]
 
