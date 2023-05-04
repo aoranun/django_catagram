@@ -33,8 +33,8 @@ class UserProfile(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(max_length=30, unique=True, null=False)
     display_name = models.CharField(max_length=50, null=False)
     birth_date = models.DateField(blank=True, null=True)
-    follower_count = models.IntegerField(default=0)
-    following_count = models.IntegerField(default=0)
+    follower_count = models.PositiveIntegerField(default=0)
+    following_count = models.PositiveIntegerField(default=0)
     GENDER_CHOICES = [
         ('M', 'man'),
         ('W', 'woman'),
@@ -76,6 +76,36 @@ class UserProfile(AbstractBaseUser, PermissionsMixin):
     @is_staff.setter
     def is_staff(self, value):
         self._is_staff = value
+
+class Follow(models.Model):
+    follower = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='follower')
+    following = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='following')
+    
+    def __str__(self):
+        return f'{self.follower} follows {self.following}'
+    
+    def save(self, *args, **kwargs):
+        created = not self.pk
+        super().save(*args, **kwargs)
+
+        if created:
+            self.following.follower_count += 1
+            self.following.save()
+
+            self.follower.following_count += 1
+            self.follower.save()
+
+    def delete(self, *args, **kwargs):
+        self.following.follower_count -= 1
+        self.following.save()
+
+        self.follower.following_count -= 1
+        self.follower.save()
+
+        super().delete(*args, **kwargs)
+
+    class Meta:
+        unique_together = ('follower', 'following')
         
 class CatPicsManager(models.Manager):
     def create_catpic(self, title, image):
