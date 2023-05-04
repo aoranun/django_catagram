@@ -13,7 +13,7 @@ class PostSerializer(serializers.Serializer):
     like_count = serializers.IntegerField()
 
 class CommentSerializer(serializers.Serializer):
-    comment = serializers.CharField(max_length=200)
+    comment_text = serializers.CharField(max_length=200)
 
 
 class LoginSerializer(serializers.Serializer):

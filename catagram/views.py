@@ -19,7 +19,7 @@ from .serializers import PostSerializer
 from .yolo import yolotest2
 
 from .models import *
-from catagram.utils.image_utils import cat_detec_path
+# from catagram.utils.image_utils import cat_detec_path
 
 from django.http import JsonResponse
 from rest_framework.authtoken.views import ObtainAuthToken
@@ -68,8 +68,6 @@ class UserCreateAPIView(APIView):
         if user_id is not None:
             # Get user by id
             try:
-                # user = UserProfile.objects.get(id=user_id)
-                # data = {'user': user.__dict__}
                 user = UserProfile.objects.filter(id=int(user_id)).values()
                 data = {'user': list(user)[0]}
             except (UserProfile.DoesNotExist, ValueError):
@@ -192,9 +190,28 @@ class CommentApi(APIView):
             status.HTTP_201_CREATED: CommentSerializer,
         },
     )
-    def post(self, request):
-        pass
-
+    def post(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            CommentPost.objects.create(
+                    comment_text=request.data['comment_text'],
+                    post_id=request.data['post_id'],
+                    user_id=user.id
+            ).save()
+            return Response(status=status.HTTP_201_CREATED)
+        except Exception as e:
+            logger.error(e)
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        
+    def get(self, request):
+        post_id = request.GET.get('post_id')
+        try:
+            comments = CommentPost.objects.filter(post_id=post_id)
+            data = {'comments': list(comments.values())}
+            return Response(data,status=status.HTTP_200_OK)
+        except (CommentPost.DoesNotExist, ValueError):
+            data = {'error': f'Comment with id={post_id} does not exist'}
+            return Response(data,status=status.HTTP_400_BAD_REQUEST)
 
 class UploadCatPicApi(GenericAPIView):
     """
