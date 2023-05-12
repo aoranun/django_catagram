@@ -39,6 +39,7 @@ urlpatterns = [
     path('postment/', CommentApi.as_view(), name='post_comment_api'),
     path('signin/', LoginApi.as_view(), name='signin_api'),
     path('logout/', LogoutApi.as_view(), name='logout_api'),
-    path('user/', UserCreateAPIView.as_view(),name='user_api')
+    path('user/', UserCreateAPIView.as_view(),name='user_api'),
+    path('profile/', ProfilePage.as_view(), name='profile_api')
     #path('api-auth/', include('rest_framework.urls', namespace='rest_framework'))
 ]

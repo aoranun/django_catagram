@@ -1,11 +1,11 @@
 from django.shortcuts import render
+from django.core.files.storage import FileSystemStorage
 
 from rest_framework import viewsets, status
 from rest_framework.generics import GenericAPIView
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import CatPics
-from .serializers import *
+
 from rest_framework.parsers import MultiPartParser
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -19,6 +19,7 @@ from .serializers import PostSerializer
 from .yolo import yolotest2
 
 from .models import *
+from .serializers import *
 # from catagram.utils.image_utils import cat_detec_path
 
 from django.http import JsonResponse
@@ -116,6 +117,9 @@ class LogoutApi(TokenViewBase):
         except Exception as e:
             return Response(status=400, data={"error": "Invalid token"})
 
+def delete_file(filepath):
+    if os.path.exists(filepath):
+        os.remove(filepath)
 
 class PostApi(APIView):
     parser_classes = [MultiPartParser]
@@ -128,25 +132,32 @@ class PostApi(APIView):
         },
     )
     def post(self, request, *args, **kwargs):
-        try:
+        file = request.data['image']
+        hash_file = get_file_hash(file)
+        fs = FileSystemStorage()
+        filename = fs.save('cat_pic/' + hash_file+'.jpg', file)
+        uploaded_file_url = fs.url(filename)
+        print(uploaded_file_url)
+        catornot = yolotest2.yolodetect('cat_pic/' + hash_file + '.jpg')
+        print(catornot)
+        if catornot == 'cat':
             user = request.user
-            # Create a new catpic
-#            yolotest2.yolodetect(request.data['image'])
+            print(user.id)
             catpic = CatPics.objects.create_catpic(
-                    title=get_file_hash(request.data['image']),
-                    image=request.data['image']
+                title=get_file_hash(request.data['image']),
+                image=request.data['image']
             )
             # Create a new post
             Post.objects.create(
-                    caption=request.data['caption'],
-                    like_count=request.data['like_count'],
-                    catpic=catpic,
-                    user_id=user.id
+                caption=request.data['caption'],
+                catpic=catpic,
+                user_id=user.id
             ).save()
-            return Response(status=status.HTTP_201_CREATED)
-        except Exception as e:
-            logger.error(e)
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            delete_file('cat_pic/' + hash_file + '.jpg')
+            return Response({'message':'is a cat. Created post success'},status=status.HTTP_201_CREATED)
+        else:
+            delete_file('cat_pic/' + hash_file + '.jpg')
+            return Response({'message':'is not a cat.'},status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request, *args, **kwargs):
         # Get all post
@@ -226,20 +237,65 @@ class UploadCatPicApi(GenericAPIView):
             status.HTTP_201_CREATED: CatPicsSerializer,
         },
     )
-    def post(self, request):
-        try:
-            CatPics(
+    def post(self, request, *args, **kwargs):
+        file = request.data['image']
+        hash_file = get_file_hash(file)
+        fs = FileSystemStorage()
+        filename = fs.save('cat_pic/' + hash_file+'.jpg', file)
+        uploaded_file_url = fs.url(filename)
+        print(uploaded_file_url)
+        catornot = yolotest2.yolodetect('cat_pic/' + hash_file + '.jpg')
+        print(catornot)
+        if catornot == 'cat':
+            user = request.user
+            print(user.id)
+            catpic = CatPics.objects.create_catpic(
                 title=get_file_hash(request.data['image']),
                 image=request.data['image']
+            )
+            # Create a new post
+            Post.objects.create(
+                caption=request.data['caption'],
+                catpic=catpic,
+                user_id=user.id
             ).save()
-            return Response(status=status.HTTP_201_CREATED)
-        except:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        
-class ProfilePage():
-    def get():
-        pass
+            delete_file('cat_pic/' + hash_file + '.jpg')
+            return Response({'message':'is a cat. Created post success'},status=status.HTTP_201_CREATED)
+        else:
+            delete_file('cat_pic/' + hash_file + '.jpg')
+            return Response({'message':'is not a cat.'},status=status.HTTP_400_BAD_REQUEST)
 
-class HomePage():
-    def get():
-        pass
+def get_post_by_uid(user_id):
+    post = Post.objects.filter(user_id=user_id)
+    return post
+
+def get_comment_by_pid(post_id):
+    commet = CommentPost.objects.filter(post_id=post_id)
+    return commet
+
+def get_user_by_uid(user_id):
+    user = UserProfile.objects.filter(id=user_id)
+    return user
+
+class ProfilePage(APIView):
+    serializer_class = ProfilePageSerializer
+    @extend_schema(
+        request=ProfilePageSerializer,
+        responses={
+            status.HTTP_200_OK: ProfilePageSerializer,
+            status.HTTP_400_BAD_REQUEST: ProfilePageSerializer
+            },
+    )
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        post = get_post_by_uid(user.id)
+        data = {'user': list(user.values()),
+                'post': list(post.values())}
+        return JsonResponse(data)
+
+class HomePage(APIView):
+    def get(self, request):
+        post = Post.objects.all()
+        comment = get_comment_by_pid(post.id)
+        data = {'post': list(post.values())}
+        return JsonResponse(data)

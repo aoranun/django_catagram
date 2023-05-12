@@ -119,10 +119,28 @@ class CatPics(models.Model):
 
     objects = CatPicsManager()
 
+class CatProfile(models.Model):
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, default=None)
+
+    catpic = models.OneToOneField(CatPics, on_delete=models.CASCADE, default=None)
+    cat_name = models.CharField(max_length=50)    
+    cat_age = models.IntegerField(default=0)
+    cat_color = models.CharField(max_length=50)
+    CAT_GENDER_CHOICES = [
+        ('M', 'male'),
+        ('F', 'female'),
+        ('N', 'not specified'),
+    ]
+    cat_gender = models.CharField(
+        max_length=1,
+        choices=CAT_GENDER_CHOICES,
+        default='N',
+    )
+
 class Post(models.Model):
     caption = models.CharField(max_length=200)
     p_time = models.DateTimeField(auto_now=True)
-    like_count = models.IntegerField()
+    like_count = models.IntegerField(default=0)
     post_at = models.DateTimeField(auto_now_add=True)
     catpic = models.OneToOneField(CatPics, on_delete=models.CASCADE)
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, default=None)
@@ -135,5 +153,7 @@ class CommentPost(models.Model):
 
 class Board(models.Model):
     pass
+
+
 
     
