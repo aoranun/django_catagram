@@ -31,6 +31,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.contrib.auth import authenticate, login, logout, get_user_model
 from rest_framework_simplejwt.views import TokenViewBase
+from rest_framework.permissions import IsAuthenticated
 
 from django.views.decorators.csrf import csrf_exempt
 import json
@@ -116,10 +117,57 @@ class LogoutApi(TokenViewBase):
             return Response(status=204)
         except Exception as e:
             return Response(status=400, data={"error": "Invalid token"})
+        
+class LoginStatus(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        user = request.user
+        data = {
+            'is_logged_in': True,
+            'username': user.username,
+            'email': user.email
+        }
+        return Response(data, status=status.HTTP_200_OK)
+
+class TokenRefresh(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        refresh_token = request.data.get('refresh_token')
+
+        if not refresh_token:
+            return Response({'error': 'Refresh token is missing.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            refresh_token = RefreshToken(refresh_token)
+            access_token = str(refresh_token.access_token)
+        except Exception as e:
+            return Response({'error': 'Failed to refresh access token.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({'access_token': access_token}, status=status.HTTP_200_OK)
 
 def delete_file(filepath):
     if os.path.exists(filepath):
         os.remove(filepath)
+
+
+
+class CatDetectorAPIView(APIView):
+    authentication_classes = [JWTAuthentication]
+    def post(self, request):
+        file = request.data['image']
+        hash_file = get_file_hash(file)
+        fs = FileSystemStorage()
+        filename = fs.save('cat_pic/' + hash_file + '.jpg', file)
+        uploaded_file_url = fs.url(filename)
+        print(uploaded_file_url)
+        cat_path = 'cat_pic/' + hash_file + '.jpg'
+        catornot = yolotest2.yolodetect(cat_path)
+        if catornot == 'cat':
+            return Response({'message': 'This is a cat'}, status=status.HTTP_201_CREATED)
+        else:
+            return Response({'error': 'This picture is not a cat, please change!'}, status=status.HTTP_400_BAD_REQUEST)
 
 class PostApi(APIView):
     parser_classes = [MultiPartParser]
@@ -132,32 +180,19 @@ class PostApi(APIView):
         },
     )
     def post(self, request, *args, **kwargs):
-        file = request.data['image']
-        hash_file = get_file_hash(file)
-        fs = FileSystemStorage()
-        filename = fs.save('cat_pic/' + hash_file+'.jpg', file)
-        uploaded_file_url = fs.url(filename)
-        print(uploaded_file_url)
-        catornot = yolotest2.yolodetect('cat_pic/' + hash_file + '.jpg')
-        print(catornot)
-        if catornot == 'cat':
-            user = request.user
-            print(user.id)
-            catpic = CatPics.objects.create_catpic(
-                title=get_file_hash(request.data['image']),
-                image=request.data['image']
-            )
-            # Create a new post
-            Post.objects.create(
-                caption=request.data['caption'],
-                catpic=catpic,
-                user_id=user.id
-            ).save()
-            delete_file('cat_pic/' + hash_file + '.jpg')
-            return Response({'message':'is a cat. Created post success'},status=status.HTTP_201_CREATED)
-        else:
-            delete_file('cat_pic/' + hash_file + '.jpg')
-            return Response({'message':'is not a cat.'},status=status.HTTP_400_BAD_REQUEST)
+        user = request.user
+        print(user.id)
+        catpic = CatPics.objects.create_catpic(
+            title=get_file_hash(request.data['image']),
+            image=request.data['image']
+        )
+        # Create a new post
+        Post.objects.create(
+            caption=request.data['caption'],
+            catpic=catpic,
+            user_id=user.id
+        ).save()
+        return Response({'message':'is a cat. Created post success'},status=status.HTTP_201_CREATED)
 
     def get(self, request, *args, **kwargs):
         # Get all post
@@ -191,6 +226,13 @@ class PostApi(APIView):
             data = {'post': list(all_post.values())}
         
         return JsonResponse(data)
+
+class AutoCaption(APIView):
+    def post(self, request, *args, **kwargs):
+        pass
+
+    def get():
+        pass
 
 class CommentApi(APIView):
     serializer_class = CommentSerializer
@@ -226,7 +268,7 @@ class CommentApi(APIView):
 
 class UploadCatPicApi(GenericAPIView):
     """
-    For the test upload a picture
+    For test upload a cat picture
     """
     serializer_class = CatPicsSerializer
     parser_classes = [MultiPartParser]
@@ -247,19 +289,6 @@ class UploadCatPicApi(GenericAPIView):
         catornot = yolotest2.yolodetect('cat_pic/' + hash_file + '.jpg')
         print(catornot)
         if catornot == 'cat':
-            user = request.user
-            print(user.id)
-            catpic = CatPics.objects.create_catpic(
-                title=get_file_hash(request.data['image']),
-                image=request.data['image']
-            )
-            # Create a new post
-            Post.objects.create(
-                caption=request.data['caption'],
-                catpic=catpic,
-                user_id=user.id
-            ).save()
-            delete_file('cat_pic/' + hash_file + '.jpg')
             return Response({'message':'is a cat. Created post success'},status=status.HTTP_201_CREATED)
         else:
             delete_file('cat_pic/' + hash_file + '.jpg')

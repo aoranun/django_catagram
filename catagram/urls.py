@@ -37,9 +37,12 @@ urlpatterns = [
     path('cat_pics/', UploadCatPicApi.as_view(), name='upload_cat_pic_api'),
     path('postcat/', PostApi.as_view(), name='post_cat_api'),
     path('postment/', CommentApi.as_view(), name='post_comment_api'),
-    path('signin/', LoginApi.as_view(), name='signin_api'),
+    path('login/', LoginApi.as_view(), name='login_api'),
     path('logout/', LogoutApi.as_view(), name='logout_api'),
+    path('user-status/', LoginStatus.as_view(), name='user-status_api'),
     path('user/', UserCreateAPIView.as_view(),name='user_api'),
-    path('profile/', ProfilePage.as_view(), name='profile_api')
+    path('profile/', ProfilePage.as_view(), name='profile_api'),
+    path('detector/',CatDetectorAPIView.as_view(), name='cat_detector'),
+    path('api/token-refresh/', TokenRefresh.as_view(), name='token-refresh')
     #path('api-auth/', include('rest_framework.urls', namespace='rest_framework'))
 ]
