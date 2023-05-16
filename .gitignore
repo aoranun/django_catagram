@@ -196,5 +196,4 @@ cython_debug/
 *.png
 .vscode/launch.json
 
-#YOLO
-catagram/yolo/
+
