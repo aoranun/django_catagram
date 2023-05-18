@@ -16,8 +16,8 @@ from rest_framework_simplejwt.tokens import OutstandingToken
 from rest_framework import permissions
 
 from .serializers import PostSerializer
-from .yolo import yolotest2
-
+from .yolo import yolotest2 
+from .yolo import testyolov5
 from .models import *
 from .serializers import *
 # from catagram.utils.image_utils import cat_detec_path
@@ -92,13 +92,17 @@ class LoginApi(APIView):
         }
     )
     def post(self, request, *args, **kwargs):
-        serializer = TokenObtainPairSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        refresh = RefreshToken.for_user(serializer.user)
-        return Response({
-            'access_token': str(serializer.validated_data['access']),
-            'refresh_token': str(refresh),
-        })
+        try: 
+            serializer = TokenObtainPairSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            refresh = RefreshToken.for_user(serializer.user)
+            return Response({
+                'access_token': str(serializer.validated_data['access']),
+                'refresh_token': str(refresh),
+            })
+        except Exception as e:
+            print(e)
+            return Response(status=400, data={"error": "Invalid email or password"}) 
 
 class LogoutApi(TokenViewBase):
     permission_classes = (permissions.AllowAny,)
@@ -151,8 +155,6 @@ def delete_file(filepath):
     if os.path.exists(filepath):
         os.remove(filepath)
 
-
-
 class CatDetectorAPIView(APIView):
     authentication_classes = [JWTAuthentication]
     def post(self, request):
@@ -164,11 +166,21 @@ class CatDetectorAPIView(APIView):
         print(uploaded_file_url)
         cat_path = 'cat_pic/' + hash_file + '.jpg'
         catornot = yolotest2.yolodetect(cat_path)
+        typcat = testyolov5.modelcat(cat_path)
         if catornot == 'cat':
-            return Response({'message': 'This is a cat'}, status=status.HTTP_201_CREATED)
+            delete_file(cat_path)
+            return Response({'message': 'This is a cat', 'type' : typcat}, status=status.HTTP_201_CREATED)
         else:
+            delete_file(cat_path)
             return Response({'error': 'This picture is not a cat, please change!'}, status=status.HTTP_400_BAD_REQUEST)
 
+class AutoCaption(APIView):
+    def post(self, request, *args, **kwargs):
+        pass
+
+    def get():
+        pass
+    
 class PostApi(APIView):
     parser_classes = [MultiPartParser]
     serializer_class = PostSerializer
@@ -226,14 +238,7 @@ class PostApi(APIView):
             data = {'post': list(all_post.values())}
         
         return JsonResponse(data)
-
-class AutoCaption(APIView):
-    def post(self, request, *args, **kwargs):
-        pass
-
-    def get():
-        pass
-
+    
 class CommentApi(APIView):
     serializer_class = CommentSerializer
 
@@ -321,10 +326,13 @@ class ProfilePage(APIView):
         data = {'user': list(user.values()),
                 'post': list(post.values())}
         return JsonResponse(data)
+    
+    def post(self, request, *args, **kwargs):
+        # Edit user profile
+        pass
 
 class HomePage(APIView):
     def get(self, request):
         post = Post.objects.all()
-        comment = get_comment_by_pid(post.id)
         data = {'post': list(post.values())}
         return JsonResponse(data)
