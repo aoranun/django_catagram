@@ -334,5 +334,6 @@ class ProfilePage(APIView):
 class HomePage(APIView):
     def get(self, request):
         post = Post.objects.all()
-        data = {'post': list(post.values())}
+        catpic = CatPics.objects.filter(post.id)
+        data = {'post': list(post.values() + catpic.values())}
         return JsonResponse(data)

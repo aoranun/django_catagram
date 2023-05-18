@@ -39,12 +39,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'catagram',
     'rest_framework',
     'rest_framework_simplejwt',
     'drf_spectacular',
     'drf_spectacular_sidecar',
-    'rest_framework_simplejwt.token_blacklist'
+    'rest_framework_simplejwt.token_blacklist',
+    'corsheaders',
+    'catagram',
 ]
 
 SPECTACULAR_SETTINGS = {
@@ -57,6 +58,7 @@ SPECTACULAR_SETTINGS = {
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -167,3 +169,9 @@ LOGGING = {
     },
 }
 
+CORS_ALLOWED_ORIGINS = [
+    "https://localhost:8000",
+    "https://djangoapp-v8j9.onrender.com/"
+    "https://dev-catagram.app",
+    "https://catagram.app",
+]
