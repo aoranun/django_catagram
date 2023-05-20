@@ -61,23 +61,33 @@ class UserCreateAPIView(APIView):
         email = request.data.get('email')
         username = request.data.get('username')
         password = request.data.get('password')
+
+        # Check if username or email already exist
+        if UserProfile.objects.filter(username=username).exists():
+            return Response({'error': 'Username already exists'}, status=status.HTTP_400_BAD_REQUEST)
+        if UserProfile.objects.filter(email=email).exists():
+            return Response({'error': 'Email already exists'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create a new user
         user = UserProfile.objects.create_user(email=email, username=username, password=password)
         user.save()
         return Response({'success': 'user created'},status=status.HTTP_201_CREATED)
 
-    def get(self, request):
+    def get(self, request, *args, **kwarqs):
+        # Get user by id
         user_id = request.GET.get('user_id')
         if user_id is not None:
-            # Get user by id
+            # Get user by user id
             try:
                 user = UserProfile.objects.filter(id=int(user_id)).values()
                 data = {'user': list(user)[0]}
             except (UserProfile.DoesNotExist, ValueError):
                 data = {'error': f'User with id={user_id} does not exist'}
         else:
-            # Get all users
-            users = UserProfile.objects.all()
-            data = {'users': list(users.values())}
+            # Get user by id (from access token)
+            user_id = request.user.id
+            user = UserProfile.objects.filter(id=int(user_id)).values()
+            data = {'users': list(user)[0]}
 
         return JsonResponse(data)
 
@@ -92,6 +102,7 @@ class LoginApi(APIView):
         }
     )
     def post(self, request, *args, **kwargs):
+        # Get access token
         try: 
             serializer = TokenObtainPairSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)

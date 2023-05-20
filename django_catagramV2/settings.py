@@ -171,7 +171,6 @@ LOGGING = {
 
 CORS_ALLOWED_ORIGINS = [
     "https://localhost:8000",
-    "https://djangoapp-v8j9.onrender.com/"
     "https://dev-catagram.app",
     "https://catagram.app",
 ]

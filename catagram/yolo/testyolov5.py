@@ -1,14 +1,14 @@
 import torch
 import yolov5
-ca =[]
-#ca2 =[]
-catmodel=['catjump','catrun','catsit','catsleep']
-# Model
-model = torch.hub.load('ultralytics/yolov5', 'custom', path='catagram/yolo/config/best.pt')
 
 # Image
 #img = r'C:\Users\MiniDragon\Documents\test\cat6.jpg'
 def modelcat(img):
+  ca =[]
+  #ca2 =[]
+  catmodel=['catjump','catrun','catsit','catsleep']
+  # Model
+  model = torch.hub.load('ultralytics/yolov5', 'custom', path='catagram/yolo/config/best.pt')
   # Inference
   results = model(img)
 

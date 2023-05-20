@@ -1,14 +1,13 @@
 import torch
 import cv2
 
-name =[]
-myfile = open("catagram\yolo\config\coco.names", "r")
-for i in myfile:
-    line = str(i)
-    line = line.strip('\n')
-    name.append(line)
-
 def yolodetect(image):
+    name =[]
+    myfile = open("catagram\yolo\config\coco.names", "r")
+    for i in myfile:
+        line = str(i)
+        line = line.strip('\n')
+        name.append(line)
 # โหลดโมเดล YOLOv7
     model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
 
