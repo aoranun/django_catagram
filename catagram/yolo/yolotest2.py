@@ -19,7 +19,7 @@ def yolodetect(image):
     for detection in results.xyxy[0]:
         label = name[int(detection[5])]
         if label == 'cat':
-            return image
+            return label
 
 
 

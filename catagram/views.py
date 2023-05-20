@@ -206,7 +206,6 @@ class PostApi(APIView):
     def post(self, request, *args, **kwargs):
         # Create a new post
         user = request.user
-        print(user.id)
         catpic = CatPics.objects.create_catpic(
             title=get_file_hash(request.data['image']),
             image=request.data['image']
@@ -224,7 +223,6 @@ class PostApi(APIView):
         post_id = request.GET.get('post_id')
         if (post_id is not None) or (user_id is not None):
             # Get all post
-            print(post_id,user_id)
             if (user_id is not None) and (post_id is None):
                 # Get post by user_id
                 try:
@@ -246,7 +244,6 @@ class PostApi(APIView):
                 except Post.DoesNotExist:
                     data = {'error': f'User with id={post_id} does not exist'}
         else:
-            print(user_id,post_id)
             all_post = Post.objects.all()
             data = {'post': list(all_post.values())}
         
@@ -342,12 +339,22 @@ class ProfilePage(APIView):
             },
     )
     def get(self, request, *args, **kwargs):
-        user = request.user
-        post = get_post_by_uid(user.id)
-        data = {'user': list(user.values()),
-                'post': list(post.values())}
+        user_id = request.user.id
+        user = get_user_by_uid(user_id)
+        posts = get_post_by_uid(user_id)
+        data = {'user': list(user.values()), 'posts': []}
+
+        for post in posts:
+            catpic = CatPics.objects.get(id=post.catpic_id)
+            post_data = {
+                'id': post.id,
+                'caption': post.caption,
+                'p_time': post.p_time,
+                'pic': catpic.image.url if catpic else None,
+            }
+            data['posts'].append(post_data)
         return JsonResponse(data)
-    
+
     def post(self, request, *args, **kwargs):
         # Edit user profile
         pass
@@ -358,6 +365,17 @@ class HomePage(APIView):
     """
     def get(self, request):
         post = Post.objects.all()
-        catpic = CatPics.objects.filter(post.id)
-        data = {'post': list(post.values() + catpic.values())}
+        catpic = CatPics.objects.all()
+        data = {'post': list(post.values()),
+                'catpic': list(catpic.values())}
+        return JsonResponse(data)
+    
+class Viewpost(APIView):
+    """
+    View post API
+    """
+    def get(self, request, *args, **kwargs):
+        post_id = request.GET.get('post_id')
+        post = Post.objects.filter(id=post_id)
+        data = {'post': list(post.values())}
         return JsonResponse(data)
