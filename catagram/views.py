@@ -77,14 +77,14 @@ class UserCreateAPIView(APIView):
         # Get user by id
         user_id = request.GET.get('user_id')
         if user_id is not None:
-            # Get user by user id
+            # user id
             try:
                 user = UserProfile.objects.filter(id=int(user_id)).values()
                 data = {'user': list(user)[0]}
             except (UserProfile.DoesNotExist, ValueError):
                 data = {'error': f'User with id={user_id} does not exist'}
         else:
-            # Get user by id (from access token)
+            # id (from access token)
             user_id = request.user.id
             user = UserProfile.objects.filter(id=int(user_id)).values()
             data = {'users': list(user)[0]}
@@ -163,10 +163,15 @@ class TokenRefresh(APIView):
         return Response({'access_token': access_token}, status=status.HTTP_200_OK)
 
 def delete_file(filepath):
+    # Delete file
     if os.path.exists(filepath):
         os.remove(filepath)
 
 class CatDetectorAPIView(APIView):
+    """
+    Cat detector API
+    Check if this is a picture of a cat or not.
+    """
     authentication_classes = [JWTAuthentication]
     def post(self, request):
         file = request.data['image']
@@ -184,15 +189,11 @@ class CatDetectorAPIView(APIView):
         else:
             delete_file(cat_path)
             return Response({'error': 'This picture is not a cat, please change!'}, status=status.HTTP_400_BAD_REQUEST)
-
-class AutoCaption(APIView):
-    def post(self, request, *args, **kwargs):
-        pass
-
-    def get():
-        pass
     
 class PostApi(APIView):
+    """
+    Post cat picture API
+    """
     parser_classes = [MultiPartParser]
     serializer_class = PostSerializer
 
@@ -203,6 +204,7 @@ class PostApi(APIView):
         },
     )
     def post(self, request, *args, **kwargs):
+        # Create a new post
         user = request.user
         print(user.id)
         catpic = CatPics.objects.create_catpic(
@@ -218,10 +220,10 @@ class PostApi(APIView):
         return Response({'message':'is a cat. Created post success'},status=status.HTTP_201_CREATED)
 
     def get(self, request, *args, **kwargs):
-        # Get all post
         user_id = request.GET.get('user_id')
         post_id = request.GET.get('post_id')
         if (post_id is not None) or (user_id is not None):
+            # Get all post
             print(post_id,user_id)
             if (user_id is not None) and (post_id is None):
                 # Get post by user_id
@@ -251,6 +253,9 @@ class PostApi(APIView):
         return JsonResponse(data)
     
 class CommentApi(APIView):
+    """
+    Comment on a post API
+    """
     serializer_class = CommentSerializer
 
     @extend_schema(
@@ -260,6 +265,7 @@ class CommentApi(APIView):
         },
     )
     def post(self, request, *args, **kwargs):
+        # Create a new comment
         try:
             user = request.user
             CommentPost.objects.create(
@@ -273,6 +279,7 @@ class CommentApi(APIView):
             return Response(status=status.HTTP_400_BAD_REQUEST)
         
     def get(self, request):
+        # Get all comment
         post_id = request.GET.get('post_id')
         try:
             comments = CommentPost.objects.filter(post_id=post_id)
@@ -323,6 +330,9 @@ def get_user_by_uid(user_id):
     return user
 
 class ProfilePage(APIView):
+    """
+    Profile page API
+    """
     serializer_class = ProfilePageSerializer
     @extend_schema(
         request=ProfilePageSerializer,
@@ -343,6 +353,9 @@ class ProfilePage(APIView):
         pass
 
 class HomePage(APIView):
+    """
+    Home page API
+    """
     def get(self, request):
         post = Post.objects.all()
         catpic = CatPics.objects.filter(post.id)
