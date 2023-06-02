@@ -16,8 +16,7 @@ from rest_framework_simplejwt.tokens import OutstandingToken
 from rest_framework import permissions
 
 from .serializers import PostSerializer
-from .yolo import yolotest2 
-from .yolo import testyolov5
+from .yolo import yolotest2, testyolov5, testdetect
 from .models import *
 from .serializers import *
 # from catagram.utils.image_utils import cat_detec_path

@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-6@qb#gd^z$$x#j2x-fzbzh+9p4-zbbvidtb61(6r1$mu)55!ch
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['django-catagramV2-dev.ap-southeast-1.elasticbeanstalk.com']
 
 
 # Application definition
