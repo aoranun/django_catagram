@@ -1,5 +1,10 @@
 import random
-my_file = open("catagram\yolo\cat_autocap.csv", "r")
+import os
+from django.conf import settings
+
+my_file = open(os.path.join(settings.BASE_DIR,
+               "./catagram/yolo/cat_autocap.csv"), "r")
+
 d = {}
 l=[]
 s = []

@@ -1,9 +1,11 @@
 import torch
 import cv2
+import os
+from django.conf import settings
 
 def yolodetect(image):
     name =[]
-    myfile = open("catagram\yolo\config\coco.names", "r")
+    myfile = open(os.path.join(settings.BASE_DIR,"./catagram/yolo/config/coco.names"), "r")
     for i in myfile:
         line = str(i)
         line = line.strip('\n')
@@ -24,4 +26,3 @@ def yolodetect(image):
 
 
 # แสดงผลภาพ
-
